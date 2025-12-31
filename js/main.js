@@ -1,5 +1,28 @@
 import * as THREE from 'three';
 import { AudioSystem } from './audio-engine.js';
+import { DiscordSDK } from '@discord/embedded-app-sdk';
+
+// --- DISCORD SETUP ---
+let discordSdk;
+
+if (document.referrer.includes('discord.com')) {
+    // Initialize the SDK if we are inside Discord
+    discordSdk = new DiscordSDK(window.location.href);
+}
+
+async function initDiscord() {
+    if (discordSdk) {
+        try {
+            await discordSdk.ready();
+            console.log("Discord SDK is Ready");
+        } catch (e) {
+            console.warn("Discord SDK failed to initialize", e);
+        }
+    }
+}
+
+// Start the handshake immediately
+initDiscord();
 
 // --- CONFIG ---
 const audio = new AudioSystem(4096);
@@ -258,7 +281,7 @@ function drawSpectrum() {
     const h = specCanvas.height;
     specCtx.clearRect(0, 0, w, h);
 
-    // Get data from audio engine yes
+    // Get data from audio engine
     const freqData = audio.freqData;
     
     specCtx.beginPath();
