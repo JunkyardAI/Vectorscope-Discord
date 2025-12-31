@@ -5,7 +5,6 @@ import { DiscordSDK } from '@discord/embedded-app-sdk';
 // --- DISCORD SETUP ---
 let discordSdk;
 
-// Check if running in Discord (iframe)
 if (document.referrer.includes('discord.com')) {
     discordSdk = new DiscordSDK(window.location.href);
 }
@@ -112,26 +111,32 @@ function setupInteraction() {
     document.getElementById('btn-export-vt').addEventListener('click', () => exportSnapshot(1080, 1920));
 
     // --- GLOBAL DRAG & DROP FIX ---
-    // Prevent default browser behavior (navigating to file) on the entire window
-    window.addEventListener('dragover', e => e.preventDefault());
-    window.addEventListener('drop', e => e.preventDefault());
-
-    // Handle Drop on Body (so you can't miss)
-    document.body.addEventListener('drop', e => {
+    // Prevent default browser behavior on the entire window
+    window.addEventListener('dragover', e => {
         e.preventDefault();
-        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        e.stopPropagation(); // Stop Discord from grabbing it
+    });
+    window.addEventListener('drop', e => {
+        e.preventDefault();
+        e.stopPropagation();
     });
 
-    // Handle Click on Overlay
-    dropOverlay.addEventListener('click', () => fileIn.click());
+    // Handle Drop on Body (Backup if overlay is hidden)
+    document.body.addEventListener('drop', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
 
     // Visual Feedback
     document.body.addEventListener('dragenter', () => {
         if(!isRunning) dropOverlay.style.background = '#002200';
     });
 
-    // File Input Change
-    fileIn.addEventListener('change', e => { if(e.target.files.length) handleFile(e.target.files[0]); });
+    // File Input Change (Native Click)
+    fileIn.addEventListener('change', e => { 
+        if(e.target.files.length) handleFile(e.target.files[0]); 
+    });
 
     // Buttons
     btnMic.addEventListener('click', activateMic);
