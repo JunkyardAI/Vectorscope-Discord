@@ -116,7 +116,8 @@
             <div style="font-size: 12px; margin-top: 10px; opacity: 0.7;">CLICK OR DRAG AUDIO FILE</div>
             <div style="font-size: 10px; margin-top: 20px; color: var(--fg); opacity: 0.5;">by Junkyard.AI</div>
         </div>
-        <input type="file" id="file-input" accept="audio/*" style="display:none;">
+        <!-- FIXED: Removed display:none, using off-screen position -->
+        <input type="file" id="file-input" accept="audio/*" style="position:fixed; top:-1000px;">
     </div>
 
     <!-- MAIN MODULE -->
