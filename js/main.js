@@ -5,8 +5,8 @@ import { DiscordSDK } from '@discord/embedded-app-sdk';
 // --- DISCORD SETUP ---
 let discordSdk;
 
+// Check if running in Discord (iframe)
 if (document.referrer.includes('discord.com')) {
-    // Initialize the SDK if we are inside Discord
     discordSdk = new DiscordSDK(window.location.href);
 }
 
@@ -21,7 +21,6 @@ async function initDiscord() {
     }
 }
 
-// Start the handshake immediately
 initDiscord();
 
 // --- CONFIG ---
@@ -95,7 +94,7 @@ function initGraphics() {
 
 // --- INTERACTION & LOGIC ---
 function setupInteraction() {
-    const drop = document.getElementById('drop-overlay');
+    const dropOverlay = document.getElementById('drop-overlay');
     const fileIn = document.getElementById('file-input');
     const btnMic = document.getElementById('btn-mic');
     const btnPause = document.getElementById('btn-pause');
@@ -112,14 +111,26 @@ function setupInteraction() {
     document.getElementById('btn-export-sq').addEventListener('click', () => exportSnapshot(1080, 1080));
     document.getElementById('btn-export-vt').addEventListener('click', () => exportSnapshot(1080, 1920));
 
-    // Drag & Drop / File Input
-    drop.addEventListener('click', () => fileIn.click());
-    drop.addEventListener('dragover', e => { e.preventDefault(); drop.style.background = '#002200'; });
-    drop.addEventListener('dragleave', e => { e.preventDefault(); drop.style.background = 'rgba(0,0,0,0.85)'; });
-    drop.addEventListener('drop', e => {
+    // --- GLOBAL DRAG & DROP FIX ---
+    // Prevent default browser behavior (navigating to file) on the entire window
+    window.addEventListener('dragover', e => e.preventDefault());
+    window.addEventListener('drop', e => e.preventDefault());
+
+    // Handle Drop on Body (so you can't miss)
+    document.body.addEventListener('drop', e => {
         e.preventDefault();
         if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
     });
+
+    // Handle Click on Overlay
+    dropOverlay.addEventListener('click', () => fileIn.click());
+
+    // Visual Feedback
+    document.body.addEventListener('dragenter', () => {
+        if(!isRunning) dropOverlay.style.background = '#002200';
+    });
+
+    // File Input Change
     fileIn.addEventListener('change', e => { if(e.target.files.length) handleFile(e.target.files[0]); });
 
     // Buttons
@@ -163,7 +174,7 @@ async function activateMic() {
     }
 }
 
-// --- APP FUNCTIONS (Ported from Original) ---
+// --- APP FUNCTIONS ---
 
 function togglePause() {
     if(!audio.ctx) return;
@@ -191,14 +202,10 @@ function setTheme(fg, dim) {
     currentFG = fg;
     currentDim = dim;
     
-    // CSS Vars
     document.documentElement.style.setProperty('--fg', fg);
     document.documentElement.style.setProperty('--dim', dim);
     
-    // Three JS Update
     if(scopeMaterial) scopeMaterial.color.set(fg);
-    
-    // Re-render immediately if paused
     if(isPaused) renderer.render(scene, camera);
 }
 
@@ -208,10 +215,8 @@ function exportSnapshot(width, height) {
     const originalSize = new THREE.Vector2();
     renderer.getSize(originalSize);
     
-    // Resize to target
     renderer.setSize(width, height);
     
-    // Update Camera aspect
     const aspect = width / height;
     const frustum = 2;
     camera.left = -frustum * aspect;
@@ -220,21 +225,17 @@ function exportSnapshot(width, height) {
     camera.bottom = -frustum;
     camera.updateProjectionMatrix();
 
-    // Render
     renderer.render(scene, camera);
 
-    // Capture
     const dataURL = renderer.domElement.toDataURL('image/png');
     
-    // Download
     const link = document.createElement('a');
     link.download = `CONSTELLATION_EXPORT_${width}x${height}_${Date.now()}.png`;
     link.href = dataURL;
     link.click();
 
-    // Restore
     renderer.setSize(originalSize.width, originalSize.height);
-    onResize(); // Resets camera
+    onResize(); 
     renderer.render(scene, camera);
 }
 
@@ -281,7 +282,6 @@ function drawSpectrum() {
     const h = specCanvas.height;
     specCtx.clearRect(0, 0, w, h);
 
-    // Get data from audio engine
     const freqData = audio.freqData;
     
     specCtx.beginPath();
@@ -305,7 +305,6 @@ function drawSpectrum() {
     specCtx.fill();
     specCtx.stroke();
     
-    // Grid markers
     specCtx.fillStyle = currentFG;
     specCtx.font = "10px JetBrains Mono";
     specCtx.globalAlpha = 0.5;
@@ -323,12 +322,11 @@ function animate() {
         const dataL = audio.dataL;
         const dataR = audio.dataR;
 
-        // 1. UPDATE VECTORSCOPE
+        // VECTORSCOPE
         const positions = scopeGeometry.attributes.position.array;
         for (let i = 0; i < audio.samples; i++) {
             const l = dataL[i];
             const r = dataR[i];
-            // Rotate 45deg: X = (L-R), Y = (L+R)
             const x = (l - r) * 1.0; 
             const y = (l + r) * 1.0; 
             positions[i * 3] = x;
@@ -337,19 +335,16 @@ function animate() {
         }
         scopeGeometry.attributes.position.needsUpdate = true;
 
-        // 2. UPDATE UI METRICS
+        // METRICS
         const m = calculateMetrics(dataL, dataR);
 
-        // DB
         const db = toDB(m.rmsTotal).toFixed(1);
         document.getElementById('val-db').innerText = db + " dB";
 
-        // Bars
         const mapDB = (val) => Math.min(100, Math.max(0, (toDB(val) + 60) * (100/60)));
         document.getElementById('bar-l').style.width = mapDB(m.rmsL) + "%";
         document.getElementById('bar-r').style.width = mapDB(m.rmsR) + "%";
 
-        // Clipping
         const clipEl = document.getElementById('clip-led');
         if (m.peakL >= 0.99 || m.peakR >= 0.99) {
             clipEl.classList.add('active');
@@ -358,7 +353,6 @@ function animate() {
             clipEl.classList.remove('active');
         }
 
-        // Correlation
         const corrPercent = ((m.correlation + 1) / 2) * 100;
         document.getElementById('corr-marker').style.left = corrPercent + "%";
         document.getElementById('val-corr').innerText = (m.correlation > 0 ? "+" : "") + m.correlation.toFixed(2);
@@ -371,11 +365,9 @@ function animate() {
             document.getElementById('corr-marker').style.background = '#fff';
         }
 
-        // Width
         const width = Math.max(0, (1 - m.correlation) * 50).toFixed(0);
         document.getElementById('val-width').innerText = width + "%";
 
-        // 3. DRAW SPECTRUM
         drawSpectrum();
     }
 
@@ -392,7 +384,6 @@ function onResize() {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    // Resize Spectrum Canvas
     const container = document.getElementById('spectrum-container');
     if(container) {
         specCanvas.width = container.clientWidth;
