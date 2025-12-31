@@ -23,6 +23,7 @@ async function initDiscord() {
 initDiscord();
 
 // --- CONFIG ---
+// 4096 samples provides high-res FFT data for the visualizer
 const audio = new AudioSystem(4096);
 
 // --- GLOBALS ---
@@ -110,31 +111,34 @@ function setupInteraction() {
     document.getElementById('btn-export-sq').addEventListener('click', () => exportSnapshot(1080, 1080));
     document.getElementById('btn-export-vt').addEventListener('click', () => exportSnapshot(1080, 1920));
 
-    // --- GLOBAL DRAG & DROP FIX ---
-    // Prevent default browser behavior on the entire window
-    window.addEventListener('dragover', e => {
-        e.preventDefault();
-        e.stopPropagation(); // Stop Discord from grabbing it
-    });
-    window.addEventListener('drop', e => {
-        e.preventDefault();
-        e.stopPropagation();
+    // --- COMPLIANCE: EPHEMERAL INPUT HANDLING ---
+    
+    // 1. Aggressively Stop Propagation
+    // This ensures Discord doesn't try to catch the file and upload it to the chat channel.
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        window.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
     });
 
-    // Handle Drop on Body (Backup if overlay is hidden)
-    document.body.addEventListener('drop', e => {
+    function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
-        if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    }
+
+    // 2. Handle Drop (RAM only)
+    dropOverlay.addEventListener('drop', (e) => {
+        let dt = e.dataTransfer;
+        let files = dt.files;
+        if(files.length) handleFile(files[0]);
+    }, false);
+
+    // 3. Handle Click (Wake Audio Context)
+    // We wake up the AudioContext on click so it's ready when the file is chosen
+    fileIn.addEventListener('click', async () => {
+        await audio.init(); 
     });
 
-    // Visual Feedback
-    document.body.addEventListener('dragenter', () => {
-        if(!isRunning) dropOverlay.style.background = '#002200';
-    });
-
-    // File Input Change (Native Click)
-    fileIn.addEventListener('change', e => { 
+    fileIn.addEventListener('change', (e) => { 
         if(e.target.files.length) handleFile(e.target.files[0]); 
     });
 
@@ -145,14 +149,25 @@ function setupInteraction() {
 }
 
 async function handleFile(file) {
+    const statusText = document.querySelector('.subtitle');
+    if(statusText) statusText.innerText = "DECODING STREAM...";
+
+    // 1. Initialize Audio Context (Standard Web Audio API)
     await audio.init();
+
     const reader = new FileReader();
+    
+    // 2. Read into Memory (ArrayBuffer)
+    // We DO NOT upload this. We read it directly into RAM.
     reader.onload = async (e) => {
         try {
+            console.log("File loaded into RAM, decoding...");
             const buffer = await audio.decodeFile(e.target.result);
-            // Stop previous if exists
+            
+            // Stop previous
             if(audio.sourceNode) { try{ audio.sourceNode.stop(); } catch(e){} }
             
+            console.log("Decoding success. Playing locally.");
             const src = audio.createBufferSource(buffer);
             src.start(0);
             audio.setupNodes(src);
@@ -161,8 +176,11 @@ async function handleFile(file) {
             document.getElementById('drop-overlay').classList.add('hidden');
         } catch(err) {
             console.error("Audio Decode Error:", err);
+            if(statusText) statusText.innerText = "INVALID AUDIO FORMAT";
+            // Note: Alerts are annoying in Discord, console logs are safer
         }
     };
+    
     reader.readAsArrayBuffer(file);
 }
 
@@ -176,6 +194,8 @@ async function activateMic() {
         document.getElementById('drop-overlay').classList.add('hidden');
     } catch(err) {
         console.error("Mic Access Error:", err);
+        const statusText = document.querySelector('.subtitle');
+        if(statusText) statusText.innerText = "MIC PERMISSION DENIED";
     }
 }
 
