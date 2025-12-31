@@ -4,16 +4,16 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // 1. Serve Static Assets
-// This tells Express to serve files from your root, /js, and /styles folders
+// This allows the server to access 'styles/style.css' and 'js/main.js'
+// because they are included via vercel.json
 app.use(express.static(path.join(__dirname)));
 
 // 2. Main Entry Point
-// When Discord requests the root URL, send index.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 3. Health Check (Optional but good for hosting platforms)
+// 3. Health Check
 app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
