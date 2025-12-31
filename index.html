@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONSTELLATION | Discord Activity</title>
+    <!-- Relative path to styles -->
+    <link rel="stylesheet" href="styles/style.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- BRANDING -->
+    <div class="branding">
+        <h1>CONSTELLATION</h1>
+        <h2>by Junkyard.AI</h2>
+    </div>
+
+    <!-- UI LAYER -->
+    <div id="ui-grid">
+        <!-- TOP LEFT: METRICS -->
+        <div class="meter-container" style="grid-column: 1; grid-row: 1 / 3;">
+            <div style="margin-bottom: 10px; border-bottom: 1px solid var(--dim); padding-bottom: 5px;">
+                <div class="label" style="font-size: 12px; color: var(--fg);">CONSTELLATION</div>
+                <div class="label">SIGNAL TERMINAL</div>
+            </div>
+            
+            <div class="meter-row">
+                <div>
+                    <div class="label">RMS LEVEL</div>
+                    <div class="value" id="val-db">-inf dB</div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="label">CLIP</div>
+                    <div id="clip-led" class="clip-indicator"></div>
+                </div>
+            </div>
+            
+            <div class="label" style="margin-top: 10px;">L Channel</div>
+            <div class="bar-bg"><div id="bar-l" class="bar-fill"></div></div>
+            
+            <div class="label" style="margin-top: 5px;">R Channel</div>
+            <div class="bar-bg"><div id="bar-r" class="bar-fill"></div></div>
+
+            <div style="margin-top: 20px; border-top: 1px solid var(--dim); padding-top: 10px;">
+                <div class="label">PHASE CORRELATION</div>
+                <div class="value" id="val-corr">+1.00</div>
+                <div class="bar-bg" style="height: 10px;">
+                    <div class="corr-marker" id="corr-marker"></div>
+                    <div style="position: absolute; left: 50%; height: 100%; width: 1px; background: #555;"></div>
+                </div>
+                <div class="corr-scale"><span>-1</span><span>0</span><span>+1</span></div>
+            </div>
+
+            <div style="margin-top: 20px; border-top: 1px solid var(--dim); padding-top: 10px;">
+                <div class="label">STEREO WIDTH</div>
+                <div class="value" id="val-width">0%</div>
+            </div>
+            
+            <div style="margin-top: auto; display: flex; flex-direction: column; gap: 5px;">
+                <button id="btn-pause">PAUSE / RESUME</button>
+                <button id="btn-mic">ACTIVATE MIC</button>
+                <button id="btn-reset">RESET SYSTEM</button>
+            </div>
+        </div>
+
+        <!-- EXPORT PANEL (Bottom Right) -->
+        <div id="export-panel" class="meter-container">
+            <div class="label">EXPORT SNAPSHOT</div>
+            <button id="btn-export-sq">SQUARE (1080x1080)</button>
+            <button id="btn-export-vt">VERTICAL (1080x1920)</button>
+        </div>
+
+        <!-- TOP RIGHT: SETTINGS -->
+        <div class="meter-container panel-right">
+            <div class="label">VISUAL CONFIGURATION</div>
+            <div style="margin-top: 10px; width: 100%;">
+                <div class="label">THEME COLOR</div>
+                <div class="theme-selector">
+                    <!-- Theme buttons are generated or handled in JS to keep HTML clean, 
+                         but for strict fidelity to original logic we use inline handlers in main.js -->
+                    <div class="color-dot" data-fg="#00ff00" data-dim="#004400" style="background: #00ff00;"></div>
+                    <div class="color-dot" data-fg="#00ffff" data-dim="#004444" style="background: #00ffff;"></div>
+                    <div class="color-dot" data-fg="#ff0000" data-dim="#440000" style="background: #ff0000;"></div>
+                    <div class="color-dot" data-fg="#bf00ff" data-dim="#2a0044" style="background: #bf00ff;"></div>
+                    <div class="color-dot" data-fg="#ff00ff" data-dim="#440044" style="background: #ff00ff;"></div>
+                </div>
+            </div>
+            <div style="margin-top: 20px; text-align: right; opacity: 0.5; font-size: 10px;">
+                <div class="label">GONIOMETER MODE</div>
+                <div>X = SIDE (L-R)</div>
+                <div>Y = MID (L+R)</div>
+            </div>
+        </div>
+
+        <!-- BOTTOM: SPECTRUM -->
+        <div id="spectrum-container">
+            <canvas id="spectrum-canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- DRAG DROP -->
+    <div id="drop-overlay">
+        <div class="drop-box">
+            <div style="font-size: 20px; font-weight: 700;">CONSTELLATION</div>
+            <div style="font-size: 12px; margin-top: 10px; opacity: 0.7;">CLICK OR DRAG AUDIO FILE</div>
+            <div style="font-size: 10px; margin-top: 20px; color: var(--fg); opacity: 0.5;">by Junkyard.AI</div>
+        </div>
+        <input type="file" id="file-input" accept="audio/*" style="display:none;">
+    </div>
+
+    <!-- MAIN MODULE -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
