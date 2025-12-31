@@ -1,4 +1,4 @@
-// Dedicated Audio System class to manage Context, Nodes, and Analysis Buffers
+// Dedicated Audio System class to manage Context, Nodes, and Analysis Bufferss
 export class AudioSystem {
     constructor(sampleSize = 4096) {
         this.samples = sampleSize;
