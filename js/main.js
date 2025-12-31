@@ -258,7 +258,7 @@ function drawSpectrum() {
     const h = specCanvas.height;
     specCtx.clearRect(0, 0, w, h);
 
-    // Get data from audio engine
+    // Get data from audio engine yes
     const freqData = audio.freqData;
     
     specCtx.beginPath();
