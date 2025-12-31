@@ -1,5 +1,5 @@
 {
-  "name": "constellation-visualizer",
+  "name": "vectorscope-discord",
   "version": "1.0.0",
   "description": "Discord Activity Audio Visualizer",
   "main": "server.js",
